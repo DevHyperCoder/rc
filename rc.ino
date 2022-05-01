@@ -2,66 +2,68 @@ const int capMeasurePin = A5;
 const int capTriggerPin = 2;
 
 void setup() {
-  pinMode(capMeasurePin,INPUT);
-  pinMode(capTriggerPin,OUTPUT);
+    pinMode(capMeasurePin,INPUT);
+    pinMode(capTriggerPin,OUTPUT);
 
-  digitalWrite(capTriggerPin,HIGH);
+    digitalWrite(capTriggerPin,HIGH);
 
-  Serial.begin(9600);
+    Serial.begin(9600);
 }
 
 void loop() {
-  if (Serial.available() > 0) {
-    auto c = Serial.read();
-
-
-  }
+    if (Serial.available() > 0) {
+        auto c = Serial.read();
+        handleData(c);
+    }
 }
 
 void handleData(char c) {
-  switch(c) {
-    case 's': 
-      {
-      Serial.println("Start Test");
+    switch(c) {
+    case 's':
+    {
+        int intitalCapMeasure = analogRead(capMeasurePin);
+        if (intitalCapMeasure > 100)  {
+            Serial.print("[WARNING] Capacitor has: ");
+            Serial.println(analogReadToVoltage(m));
+            Serial.println("Please discharge the capacitor or wait till I figure out mechanism to discharge it programmatically.\nABORT TEST");
+            return;
+        }
+        digitalWrite(capTriggerPin, LOW);
 
-      digitalWrite(capTriggerPin, LOW);
+        int capMeasure = analogRead(capMeasurePin);
 
-      Serial.println("Start charging");
+        unsigned long startTime = millis();
 
-      int capMeasure = analogRead(capMeasurePin);
+        // 1T = 63% of charging voltage
+        while (analogReadToVoltage(analogRead(capMeasurePin)) < (5 * 0.63)) {
+            continue;
+        }
 
-      unsigned long startTime = millis();
+        unsigned long elapsed = millis() - startTime;
 
-      // 1T = 63% of charging voltage
-      while (analogReadToVoltage(analogRead(capMeasurePin)) < (5 * 0.63)) {
-        continue;
-      }
+        Serial.print("Voltage: ");
+        Serial.println(analogReadToVoltage(analogRead(capMeasurePin)));
 
-      unsigned long elapsed = millis() - startTime;
+        Serial.print("Time (ms): ");
+        Serial.println(elapsed);
 
-      Serial.print("Voltage: ");
-      Serial.println(analogReadToVoltage(analogRead(capMeasurePin)));
-
-      Serial.print("Time (ms): ");
-      Serial.println(elapsed);
-
-      digitalWrite(capTriggerPin, HIGH);
-      break;
-    } 
-    case 'h':
-      {
-      Serial.println("Press 's' to start the test");
-      break;
-    } 
-    case 'v':
-      {
-      Serial.println(analogReadToVoltage(analogRead(capMeasurePin)));
-      break;
+        digitalWrite(capTriggerPin, HIGH);
+        break;
     }
-  }
+    case 'h':
+    {
+        Serial.println("Press 's' to start the test");
+        break;
+    }
+    case 'v':
+    {
+        Serial.println(analogReadToVoltage(analogRead(capMeasurePin)));
+        break;
+    }
+    }
 }
 
 
 float analogReadToVoltage(int measure) {
-  return  measure * (5.0 / 1023.0);
+    return  measure * (5.0 / 1023.0);
 }
